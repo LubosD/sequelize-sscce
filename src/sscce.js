@@ -23,14 +23,43 @@ module.exports = async function() {
       timestamps: false // For less clutter in the SSCCE
     }
   });
+  
+  await sequelize.query('PRAGMA foreign_keys = ON', { raw: true });
 
-  const Foo = sequelize.define('Foo', { name: DataTypes.TEXT });
+  const Article = sequelize.define('Article', { name: DataTypes.TEXT });
+  const PriceList = sequelize.define('PriceList', { name: DataTypes.TEXT });
+  const ArticlePrice = sequelize.define('ArticlePrice', {
+    ArticleId: {
+				type: DataTypes.INTEGER,
+				references: {
+					model: Article,
+					key: 'id'
+				}
+			},
+			PriceListId: {
+				type: DataTypes.INTEGER,
+				references: {
+					model: PriceList,
+					key: 'id'
+				}
+			},
+  });
+  
+  PriceList.belongsToMany(Article, { through: ArticlePrice });
+	Article.belongsToMany(PriceList, { through: ArticlePrice });
 
   const spy = sinon.spy();
   sequelize.afterBulkSync(() => spy());
-  await sequelize.sync();
+  await sequelize.sync({ alter: true });
   expect(spy).to.have.been.called;
 
-  log(await Foo.create({ name: 'foo' }));
-  expect(await Foo.count()).to.equal(1);
+  let article = await Article.create({ name: 'foo' });
+  log(article);
+  
+  let pricelist = await PriceList.create({ name: 'foo' });
+  log(pricelist);
+  
+  log(await ArticlePrice.create({ ArticleId: article.id, PriceListId: pricelist.id }));
+  await PriceList.destroy({ truncate: true });
+  
 };
