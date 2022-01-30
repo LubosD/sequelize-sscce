@@ -14,13 +14,17 @@ const log = require('./utils/log');
 const sinon = require('sinon');
 const { expect } = require('chai');
 
+class ArticlePrice extends Model {
+  
+}
+
 // Your SSCCE goes inside this function.
 module.exports = async function() {
   const sequelize = createSequelizeInstance({
     logQueryParameters: true,
     benchmark: true,
     define: {
-      timestamps: false // For less clutter in the SSCCE
+      timestamps: true // Setting this to false fixes the bug
     }
   });
   
@@ -28,7 +32,8 @@ module.exports = async function() {
 
   const Article = sequelize.define('Article', { name: DataTypes.TEXT });
   const PriceList = sequelize.define('PriceList', { name: DataTypes.TEXT });
-  const ArticlePrice = sequelize.define('ArticlePrice', {
+
+  ArticlePrice.init({
     ArticleId: {
 				type: DataTypes.INTEGER,
 				references: {
@@ -43,6 +48,14 @@ module.exports = async function() {
 					key: 'id'
 				}
 			},
+  }, {
+    sequelize,
+    modelName: "ArticlePrice",
+			indexes: [
+				{
+					fields: ["ArticleId", "PriceListId"],
+				},
+			]
   });
   
   PriceList.belongsToMany(Article, { through: ArticlePrice });
@@ -60,6 +73,9 @@ module.exports = async function() {
   log(pricelist);
   
   log(await ArticlePrice.create({ ArticleId: article.id, PriceListId: pricelist.id }));
+
+  // This will now throw due to foreign key constraint failure
+  // If you set timestamps to false, it will be OK
   await PriceList.destroy({ truncate: true });
   
 };

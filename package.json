@@ -44,7 +44,7 @@
     "del-cli": "^3",
     "eslint": "^6",
     "eslint-plugin-node": "^10",
-    "sqlite3": "^4",
+    "sqlite3": "^4.2.0",
     "typescript": "~4.1"
   }
 }
